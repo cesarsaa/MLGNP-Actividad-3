@@ -34,36 +34,123 @@ suppressMessages(library(VGAM))
 #----------------------------------------------------------------------------------------#
 # Fijar directorio
 setwd("/Users/cesar.saavedra/Documents/GitHub/MLGNP-Actividad-3")
-setwd("C:/Users/Angie Rodr�guez/Documents/GitHub/MLGNP-Actividad-3")
-
+setwd("")
 #----------------------------------------------------------------------------------------#
 # Cargar los datos
 Datos <- read.table("Datos.txt",header=T,sep = ",")
 Datos
-
 # Tamaño de la muestra
 n <- 60
-
 # Selección de la muestra
 set.seed(917)
 muestra <- Datos %>% sample_n(size=n,replace=FALSE)
 muestra
-
-attach(muestra)
-
-library(scales)
-fixed.acidity<-rescale(muestra$fixed.acidity)
-pH<-rescale(muestra$pH)
-
 # Correlacion
 corrplot(cor(muestra), method="square", type="upper", order="hclust", tl.col="black")
-
 # Exploracion de datos
 ggplot()+ geom_point(data = muestra, aes(y = fixed.acidity, x = pH)) + 
   ylab("Acidez fija") + xlab("pH")
-
-# Estimacion de sigma
-y  = pull(muestra, fixed.acidity)
+#----------------------------------------------------------------------------------------# 
+x <- scale(muestra[,c(1)],center=T,scale=T)
+x <- cbind(x,muestra$pH)
+x <- as.data.frame(x)
+x <- cbind(muestra$fixed.acidity,muestra$pH)
+x <- as.data.frame(x)
+x
+n = nrow(x)
+y  = pull(x, V2)
 
 sigma.rice <- 1/(2*(n-1))*sum((y - lag(y, k=1))^2, na.rm = T)
+sigma.rice
+
+base_cons <- function(x,j){
+  sqrt(2)*cos((j-1)*pi*x)
+}
+#-------------------------------
+lambda.select <- function(x, lambda, salida=1){
+  df <-   dplyr::select(x, V2)
+  hora_normada <- x$V1; i <- list(); y <- list()
+  
+  for (i in 2:lambda) {
+    y[[i]] <- base_cons(hora_normada, i)
+  }
+  
+  y <- data.frame(matrix(unlist(y), ncol = lambda-1))
+  df <-  bind_cols(df, y)
+  #-------------------------------
+  f.i <- df %>% 
+    dplyr::select(contains("x")) %>% 
+    colnames()
+  
+  lambda <- lambda %>%
+    tibble(lambda = . )
+  
+  f.i_sum <- paste(f.i, collapse = "+")
+  mdl_formula <- as.formula(paste("V2", f.i_sum, sep = "~"))
+  
+  mdl <- lm(mdl_formula, data = df)
+  #-------------------------------
+  fitted <- predict(mdl) %>%
+    tibble(fitted = . )
+  #-------------------------------        
+  S = lm.influence(mdl)$hat
+  tr = sum(S)
+  #-------------------------------
+  UBRE <-  (1/n) * sum(resid(mdl)^2) + (2/n) * sigma.rice*tr - sigma.rice %>% 
+    tibble(ubre = .)
+  
+  CV <- (1/n) * sum(((residuals(mdl) / (1-S))^2)) %>%
+    tibble(cv = .)
+  
+  GCV <- (1/n) * ( sum(resid(mdl)^2) / (1 - (1/n) * tr)^2 ) %>% 
+    tibble(GCV = .)
+  #-------------------------------
+  R <- bind_cols(UBRE, CV, GCV, lambda)
+  #-------------------------------        
+  if(salida == 1) {
+    return(R)
+  } else {
+    return(fitted)
+  } 
+}
+#-------------------------------
+all.R <- function(x, lambda){
+  R <- list()
+  for(i in 2:lambda){
+    R[[i]] <- lambda.select(x,i)
+  }
+  R <- as.data.frame(t(matrix(unlist(R), ncol = lambda-1)))
+  names(R) <- c("UBRE","CV","GCV","LAMBDA")
+  return(R)
+}
+#-------------------------------
+lambda <- 60
+all.R <- all.R(x, lambda)
+all.R
+
+plot1 <- ggplot()+
+  geom_point(data = all.R, aes(x = LAMBDA, y = UBRE)) +
+  theme_bw() +
+  labs(x =  expression(lambda), y = expression(hat(R)(lambda)))
+
+plot2 <- ggplot()+
+  geom_point(data = all.R, aes(x = LAMBDA, y = CV)) +
+  theme_bw() +
+  labs(x =  expression(lambda), y = expression(hat(CV)(lambda)))
+
+plot3 <- ggplot()+
+  geom_point(data = all.R, aes(x = LAMBDA, y = GCV)) +
+  theme_bw() +
+  labs(x =  expression(lambda), y = expression(hat(GCV)(lambda)))
+
+grid.arrange(plot1, plot2, plot3, ncol=2)
+
+lambda <- 2
+salida <- 2 # 1: Riesgo, 2: fitted values
+
+fitted <- lambda.select(x, lambda, salida)
+x <- bind_cols(x, fitted)
+x
+ggplot() + geom_point(data = x, aes(x = V1, y = V2)) +
+  geom_line(data = x, aes(x =V1, y = fitted))
 
