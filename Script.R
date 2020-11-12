@@ -34,20 +34,36 @@ suppressMessages(library(VGAM))
 #----------------------------------------------------------------------------------------#
 # Fijar directorio
 setwd("/Users/cesar.saavedra/Documents/GitHub/MLGNP-Actividad-3")
-setwd("")
+setwd("C:/Users/Angie Rodr�guez/Documents/GitHub/MLGNP-Actividad-3")
+
 #----------------------------------------------------------------------------------------#
 # Cargar los datos
 Datos <- read.table("Datos.txt",header=T,sep = ",")
 Datos
+
 # Tamaño de la muestra
 n <- 60
+
 # Selección de la muestra
 set.seed(917)
 muestra <- Datos %>% sample_n(size=n,replace=FALSE)
 muestra
+
+attach(muestra)
+
+library(scales)
+fixed.acidity<-rescale(muestra$fixed.acidity)
+pH<-rescale(muestra$pH)
+
 # Correlacion
 corrplot(cor(muestra), method="square", type="upper", order="hclust", tl.col="black")
+
 # Exploracion de datos
 ggplot()+ geom_point(data = muestra, aes(y = fixed.acidity, x = pH)) + 
   ylab("Acidez fija") + xlab("pH")
+
 # Estimacion de sigma
+y  = pull(muestra, fixed.acidity)
+
+sigma.rice <- 1/(2*(n-1))*sum((y - lag(y, k=1))^2, na.rm = T)
+
