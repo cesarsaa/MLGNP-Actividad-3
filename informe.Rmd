@@ -3,6 +3,7 @@ title: 'Tarea 3: Elección de $\lambda$ óptimo'
 author: "Angie Rodríguez Duque & César Saavedra Vanegas"
 date: "Octubre 14 de 2020"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
 ---
@@ -57,20 +58,24 @@ Datos
 
 Se procede a seleccionar una muestra de 60 vinos de la base de datos y se escoge las variables "acidez fija" como respuesta y "ph" como predictora
 
-```{r warning=F, include=F, paged.print=T}
+```{r warning=F, include=T, paged.print=T}
 # Tamaño de la muestra
 n <- 60
-
 # Seleccion de la muestra
-set.seed(917)
+set.seed(12345)
 muestra <- Datos %>% sample_n(size=n,replace=FALSE)
-muestra
+muestra <- muestra %>% arrange(pH)
 ```
 
 ### Representación gráfica
 
-```{r warning=FALSE, include=T, paged.print=TRUE}
-ggplot()+ geom_point(data = muestra, aes(y = fixed.acidity, x = pH)) + 
+```{r message=TRUE, warning=TRUE, include=T, paged.print=T}
+x <- muestra  %>% dplyr::select(fixed.acidity, pH)
+```
+
+
+```{r fig.height=4, fig.width=8, warning=FALSE, include=T, paged.print=TRUE}
+ggplot() + geom_point(data = x, aes(x = pH, y = fixed.acidity)) + 
   ylab("Acidez fija") + xlab("pH")
 ```
 
@@ -81,14 +86,9 @@ En esta sección se estimará la varianza del modelo haciendo uso del estimador 
 
 $$ \sigma^{2}_{R}=\displaystyle{\frac{1}{2(n-1)}\sum_{i=2}^{n}\left( y_{i}-y_{i-1}\right)^{2}}$$
 
-```{r warning=FALSE, include=T, paged.print=TRUE}
-library(dplyr)
-x <- cbind(muestra$fixed.acidity,muestra$pH)
-x <- as.data.frame(x)
-x
+```{r warning=FALSE, include=F, paged.print=TRUE}
 n = nrow(x)
-y  = pull(x, V2)
-
+y  = pull(x, fixed.acidity)
 sigma.rice <- 1/(2*(n-1))*sum((y - lag(y, k=1))^2, na.rm = T)
 sigma.rice
 ```
@@ -103,14 +103,14 @@ Donde: $\lambda \in (1,2,...,60)$ es el número de funciones $f_{i}$
 
 Deseamos entonces construir un dataframe tomando como variable respuesta "acidez fija" y como variable predictora "pH" donde  y f es la base de cosenos (CONS) que elegimos previamente.
 
-```{r warning=FALSE, include=T, paged.print=TRUE}
+```{r warning=FALSE, include=F, paged.print=TRUE}
 base_cons <- function(x,j){
   sqrt(2)*cos((j-1)*pi*x)
 }
-#-------------------------------
+
 lambda.select <- function(x, lambda, salida=1){
-  df <-   dplyr::select(x, V2)
-  hora_normada <- x$V1; i <- list(); y <- list()
+  df <-   dplyr::select(x, fixed.acidity)
+  hora_normada <- x$pH; i <- list(); y <- list()
   
   for (i in 2:lambda) {
     y[[i]] <- base_cons(hora_normada, i)
@@ -118,7 +118,7 @@ lambda.select <- function(x, lambda, salida=1){
   
   y <- data.frame(matrix(unlist(y), ncol = lambda-1))
   df <-  bind_cols(df, y)
-  #-------------------------------
+
   f.i <- df %>% 
     dplyr::select(contains("x")) %>% 
     colnames()
@@ -127,16 +127,16 @@ lambda.select <- function(x, lambda, salida=1){
     tibble(lambda = . )
   
   f.i_sum <- paste(f.i, collapse = "+")
-  mdl_formula <- as.formula(paste("V2", f.i_sum, sep = "~"))
+  mdl_formula <- as.formula(paste("fixed.acidity", f.i_sum, sep = "~"))
   
   mdl <- lm(mdl_formula, data = df)
-  #-------------------------------
+
   fitted <- predict(mdl) %>%
     tibble(fitted = . )
-  #-------------------------------        
+      
   S = lm.influence(mdl)$hat
   tr = sum(S)
-  #-------------------------------
+
   UBRE <-  (1/n) * sum(resid(mdl)^2) + (2/n) * sigma.rice*tr - sigma.rice %>% 
     tibble(ubre = .)
   
@@ -145,16 +145,16 @@ lambda.select <- function(x, lambda, salida=1){
   
   GCV <- (1/n) * ( sum(resid(mdl)^2) / (1 - (1/n) * tr)^2 ) %>% 
     tibble(GCV = .)
-  #-------------------------------
+
   R <- bind_cols(UBRE, CV, GCV, lambda)
-  #-------------------------------        
+   
   if(salida == 1) {
     return(R)
   } else {
     return(fitted)
   } 
 }
-#-------------------------------
+
 all.R <- function(x, lambda){
   R <- list()
   for(i in 2:lambda){
@@ -179,13 +179,14 @@ Tras haber elegido el valor optimo de $\lambda$ se prosigue a estimar el modelo 
 Se obtiene a continuación un dataframe que reune el valor del $\hat{R}(\lambda)$ para cada $\lambda$ y para cada método (UBRE,CV,GCV).
 
 ```{r warning=FALSE, include=T, paged.print=TRUE}
-lambda <- 2
+lambda <- 30
 all.R <- all.R(x, lambda)
+all.R
 ```
 
 ### Representación gráfica
 
-```{r warning=FALSE, include=T, paged.print=TRUE}
+```{r warning=FALSE, include=F, paged.print=TRUE}
 plot1 <- ggplot()+
   geom_point(data = all.R, aes(x = LAMBDA, y = UBRE)) +
   theme_bw() +
@@ -201,8 +202,14 @@ plot3 <- ggplot()+
   theme_bw() +
   labs(x =  expression(lambda), y = expression(hat(GCV)(lambda)))
 
+```
+
+
+```{r fig.height=4, fig.width=8, message=TRUE, warning=TRUE}
 grid.arrange(plot1, plot2, plot3, ncol=2)
 ```
+
+Finalmente se observa mediante los graficos que el valor de $\lambda$ que minimiza las estimaciones para los criterios de UBRE, CV y GCV es un valor de $\lambda=3$.
 
 ## 6. Interpretaciones
 
@@ -217,17 +224,22 @@ A partir del modelo anterior se puede decir que:
 
 ## 7. Ajuste de modelo lineal y comparación
 
-```{r warning=FALSE, include=T, paged.print=TRUE}
-lambda <- 2
+```{r warning=FALSE, include=F, paged.print=TRUE}
+lambda <- 3
 salida <- 2 # 1: Riesgo, 2: fitted values
 
 fitted <- lambda.select(x, lambda, salida)
 x <- bind_cols(x, fitted)
 x
-ggplot() + geom_point(data = x, aes(x = V1, y = V2)) +
-  geom_line(data = x, aes(x =V1, y = fitted))
 ```
 
+```{r fig.height=4, fig.width=8}
+ggplot()+ geom_point(data = x, aes(x = pH, y = fixed.acidity)) +
+  geom_line(data = x, aes(x =pH, y = fitted), col="red") +
+  labs(subtitle = expression(lambda==3)) + 
+  ylab("Acidez fija") + xlab("pH")
+```
+Tenemos entonces la estimación del comportamiento de la acidez fija para el pH usando series de Fourier con base de cosenos y con un $\lambda=3$, que seleccionamos por medio de los métodos UBRE, CV y GCV , podríamos decir que $\mu_{3}$ una buena aproximación a $\mu$.
 
 # Bibliografía
 

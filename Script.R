@@ -1,79 +1,51 @@
+#----------------------------------------------------------------------------------------#
 # MLGNP Tarea 3
 # Cesar A Saavedra
 # Angie Rodriguez uque
 #----------------------------------------------------------------------------------------#
-# Librerias 
 suppressMessages(library(dplyr))
-suppressMessages(library(readxl))
 suppressMessages(library(tidyverse))
-suppressMessages(library(FactoMineR))
 suppressMessages(library(factoextra))
-suppressMessages(library(foreign))
 suppressMessages(library(corrplot))
 suppressMessages(library(polycor))
 suppressMessages(library(psych))
 suppressMessages(library(gplots))
 suppressMessages(library(gridExtra))
-suppressMessages(library(viridis))
-suppressMessages(library(lsr))
-suppressMessages(library(DescTools))
-suppressMessages(library(magrittr))
 suppressMessages(library(nlme))
 suppressMessages(library(MASS))
-suppressMessages(library(multilevel))
 suppressMessages(library(reshape))
 suppressMessages(library(homals))
-suppressMessages(library(GGally))
-suppressMessages(library(CCA))
-suppressMessages(library(plotly))
 suppressMessages(library(broom))
 suppressMessages(library(readr))
 suppressMessages(library(lubridate))
 suppressMessages(library(purrr))
 suppressMessages(library(VGAM))
 #----------------------------------------------------------------------------------------#
-# Fijar directorio
-setwd("/Users/cesar.saavedra/Documents/GitHub/MLGNP-Actividad-3")
-setwd("C:/Users/Angie Rodr�guez/Documents/GitHu/\MLGNP-Actividad-3")
-#----------------------------------------------------------------------------------------#
-# Cargar los datos
 Datos <- read.table("Datos.txt",header=T,sep = ",")
 Datos
-Datos <- Datos %>% arrange(pH)
-# Tamaño de la muestra
+#----------------------------------------------------------------------------------------#
 n <- 60
-# Selección de la muestra
-set.seed(917)
+set.seed(12345)
 muestra <- Datos %>% sample_n(size=n,replace=FALSE)
+muestra <- muestra %>% arrange(pH)
 muestra
-# Correlacion
-corrplot(cor(muestra), method="square", type="upper", order="hclust", tl.col="black")
-# Exploracion de datos
-ggplot()+ geom_point(data = muestra, aes(y = fixed.acidity, x = pH)) + 
-  ylab("Acidez fija") + xlab("pH")
-
-#----------------------------------------------------------------------------------------# 
-library(dplyr)
-x <- cbind(muestra$fixed.acidity,muestra$pH)
-x <- as.data.frame(x)
+#----------------------------------------------------------------------------------------#
+x <- muestra  %>% dplyr::select(fixed.acidity, pH)
 x
+ggplot() + geom_point(data = x, aes(x = pH, y = fixed.acidity))
+#----------------------------------------------------------------------------------------#
 n = nrow(x)
-y  = pull(x, V2)
-
+y  = pull(x, fixed.acidity)
 sigma.rice <- 1/(2*(n-1))*sum((y - lag(y, k=1))^2, na.rm = T)
 sigma.rice
-
-
-#----------------------------------------------------------------------------------------# 
-# Eleccion de lambda
-
+#----------------------------------------------------------------------------------------#
 base_cons <- function(x,j){
   sqrt(2)*cos((j-1)*pi*x)
 }
-#-------------------------------
+
 lambda.select <- function(x, lambda, salida=1){
-  df <-   dplyr::select(x, V2)
-  hora_normada <- x$V1; i <- list(); y <- list()
+  df <-   dplyr::select(x, fixed.acidity)
+  hora_normada <- x$pH; i <- list(); y <- list()
   
   for (i in 2:lambda) {
     y[[i]] <- base_cons(hora_normada, i)
@@ -81,7 +53,7 @@ lambda.select <- function(x, lambda, salida=1){
   
   y <- data.frame(matrix(unlist(y), ncol = lambda-1))
   df <-  bind_cols(df, y)
-  #-------------------------------
+  
   f.i <- df %>% 
     dplyr::select(contains("x")) %>% 
     colnames()
@@ -90,16 +62,16 @@ lambda.select <- function(x, lambda, salida=1){
     tibble(lambda = . )
   
   f.i_sum <- paste(f.i, collapse = "+")
-  mdl_formula <- as.formula(paste("V2", f.i_sum, sep = "~"))
+  mdl_formula <- as.formula(paste("fixed.acidity", f.i_sum, sep = "~"))
   
   mdl <- lm(mdl_formula, data = df)
-  #-------------------------------
+  
   fitted <- predict(mdl) %>%
     tibble(fitted = . )
-  #-------------------------------        
+  
   S = lm.influence(mdl)$hat
   tr = sum(S)
-  #-------------------------------
+  
   UBRE <-  (1/n) * sum(resid(mdl)^2) + (2/n) * sigma.rice*tr - sigma.rice %>% 
     tibble(ubre = .)
   
@@ -108,16 +80,16 @@ lambda.select <- function(x, lambda, salida=1){
   
   GCV <- (1/n) * ( sum(resid(mdl)^2) / (1 - (1/n) * tr)^2 ) %>% 
     tibble(GCV = .)
-  #-------------------------------
+  
   R <- bind_cols(UBRE, CV, GCV, lambda)
-  #-------------------------------        
+  
   if(salida == 1) {
     return(R)
   } else {
     return(fitted)
   } 
 }
-#-------------------------------
+
 all.R <- function(x, lambda){
   R <- list()
   for(i in 2:lambda){
@@ -127,15 +99,11 @@ all.R <- function(x, lambda){
   names(R) <- c("UBRE","CV","GCV","LAMBDA")
   return(R)
 }
-
 #----------------------------------------------------------------------------------------#
-# Dataframe con valores de lambda por cada metodo
-lambda <- 60
+lambda <- 30
 all.R <- all.R(x, lambda)
 all.R
-
 #----------------------------------------------------------------------------------------#
-# Representacion grafica del lambda escogido
 plot1 <- ggplot()+
   geom_point(data = all.R, aes(x = LAMBDA, y = UBRE)) +
   theme_bw() +
@@ -152,15 +120,15 @@ plot3 <- ggplot()+
   labs(x =  expression(lambda), y = expression(hat(GCV)(lambda)))
 
 grid.arrange(plot1, plot2, plot3, ncol=2)
-
 #----------------------------------------------------------------------------------------#
-# Ajuste de modelo lineal
-lambda <- 2
+lambda <- 3
 salida <- 2 # 1: Riesgo, 2: fitted values
 
 fitted <- lambda.select(x, lambda, salida)
 x <- bind_cols(x, fitted)
 x
-ggplot() + geom_point(data = x, aes(x = V1, y = V2)) +
-  geom_line(data = x, aes(x =V1, y = fitted))
-
+#----------------------------------------------------------------------------------------#
+ggplot()+ geom_point(data = x, aes(x = pH, y = fixed.acidity)) +
+  geom_line(data = x, aes(x =pH, y = fitted), col="red") +
+  labs(subtitle = expression(lambda==3))
+#----------------------------------------------------------------------------------------#
