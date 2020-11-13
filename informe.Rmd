@@ -1,12 +1,41 @@
 ---
-title: 'Informe: Elección de $\lambda$ óptimo'
+title: 'Tarea 3: Elección de $\lambda$ óptimo'
 author: "Angie Rodríguez Duque & César Saavedra Vanegas"
 date: "Octubre 14 de 2020"
 output:
   html_document:
     df_print: paged
 ---
-
+```{r warning=FALSE, include=F, paged.print=TRUE}
+suppressMessages(library(dplyr))
+suppressMessages(library(readxl))
+suppressMessages(library(tidyverse))
+suppressMessages(library(FactoMineR))
+suppressMessages(library(factoextra))
+suppressMessages(library(foreign))
+suppressMessages(library(corrplot))
+suppressMessages(library(polycor))
+suppressMessages(library(psych))
+suppressMessages(library(gplots))
+suppressMessages(library(gridExtra))
+suppressMessages(library(viridis))
+suppressMessages(library(lsr))
+suppressMessages(library(DescTools))
+suppressMessages(library(magrittr))
+suppressMessages(library(nlme))
+suppressMessages(library(MASS))
+suppressMessages(library(multilevel))
+suppressMessages(library(reshape))
+suppressMessages(library(homals))
+suppressMessages(library(GGally))
+suppressMessages(library(CCA))
+suppressMessages(library(plotly))
+suppressMessages(library(broom))
+suppressMessages(library(readr))
+suppressMessages(library(lubridate))
+suppressMessages(library(purrr))
+suppressMessages(library(VGAM))
+```
 # Introducción
 
 En los métodos de regresión no paramétrica los estimadores en general no son insesgados, por lo que la varianza del estimador no será suficiente para evaluar la incertidumbre inherente a estos métodos.
@@ -29,12 +58,21 @@ Datos
 Se procede a seleccionar una muestra de 60 vinos de la base de datos y se escoge las variables "acidez fija" como respuesta y "ph" como predictora
 
 ```{r warning=F, include=F, paged.print=T}
-# Cargar los datos
-Datos <- read.table("Datos.txt",header=T,sep = ",")
-Datos
+# Tamaño de la muestra
+n <- 60
+
+# Seleccion de la muestra
+set.seed(917)
+muestra <- Datos %>% sample_n(size=n,replace=FALSE)
+muestra
 ```
 
 ### Representación gráfica
+
+```{r warning=FALSE, include=T, paged.print=TRUE}
+ggplot()+ geom_point(data = muestra, aes(y = fixed.acidity, x = pH)) + 
+  ylab("Acidez fija") + xlab("pH")
+```
 
 ## 3. Estimación de la varianza $(\hat{\sigma}^{2})$
 
@@ -43,14 +81,132 @@ En esta sección se estimará la varianza del modelo haciendo uso del estimador 
 
 $$ \sigma^{2}_{R}=\displaystyle{\frac{1}{2(n-1)}\sum_{i=2}^{n}\left( y_{i}-y_{i-1}\right)^{2}}$$
 
+```{r warning=FALSE, include=T, paged.print=TRUE}
+library(dplyr)
+x <- cbind(muestra$fixed.acidity,muestra$pH)
+x <- as.data.frame(x)
+x
+n = nrow(x)
+y  = pull(x, V2)
+
+sigma.rice <- 1/(2*(n-1))*sum((y - lag(y, k=1))^2, na.rm = T)
+sigma.rice
+```
+
 ## 4. Elección de $\lambda$
 
 La elección del $\lambda$ más apropiado para la estimación de $\mu$ en el ejemplo de vino rojo se lleva a cabo mediante el estimador insesgado del riesgo, también conocido como **UBRE** (UnBiased Risk Estimator) el cual hace uso de series de cosenos.
 
+$$\hat{R}(\lambda)=\frac{1}{n}RSS(\lambda)+\frac{2}{n}\hat{\sigma}^{2}tr\left[S_{\lambda}\right]-\hat{\sigma}^{2}$$
+
+Donde: $\lambda \in (1,2,...,60)$ es el número de funciones $f_{i}$
+
+Deseamos entonces construir un dataframe tomando como variable respuesta "acidez fija" y como variable predictora "pH" donde  y f es la base de cosenos (CONS) que elegimos previamente.
+
+```{r warning=FALSE, include=T, paged.print=TRUE}
+base_cons <- function(x,j){
+  sqrt(2)*cos((j-1)*pi*x)
+}
+#-------------------------------
+lambda.select <- function(x, lambda, salida=1){
+  df <-   dplyr::select(x, V2)
+  hora_normada <- x$V1; i <- list(); y <- list()
+  
+  for (i in 2:lambda) {
+    y[[i]] <- base_cons(hora_normada, i)
+  }
+  
+  y <- data.frame(matrix(unlist(y), ncol = lambda-1))
+  df <-  bind_cols(df, y)
+  #-------------------------------
+  f.i <- df %>% 
+    dplyr::select(contains("x")) %>% 
+    colnames()
+  
+  lambda <- lambda %>%
+    tibble(lambda = . )
+  
+  f.i_sum <- paste(f.i, collapse = "+")
+  mdl_formula <- as.formula(paste("V2", f.i_sum, sep = "~"))
+  
+  mdl <- lm(mdl_formula, data = df)
+  #-------------------------------
+  fitted <- predict(mdl) %>%
+    tibble(fitted = . )
+  #-------------------------------        
+  S = lm.influence(mdl)$hat
+  tr = sum(S)
+  #-------------------------------
+  UBRE <-  (1/n) * sum(resid(mdl)^2) + (2/n) * sigma.rice*tr - sigma.rice %>% 
+    tibble(ubre = .)
+  
+  CV <- (1/n) * sum(((residuals(mdl) / (1-S))^2)) %>%
+    tibble(cv = .)
+  
+  GCV <- (1/n) * ( sum(resid(mdl)^2) / (1 - (1/n) * tr)^2 ) %>% 
+    tibble(GCV = .)
+  #-------------------------------
+  R <- bind_cols(UBRE, CV, GCV, lambda)
+  #-------------------------------        
+  if(salida == 1) {
+    return(R)
+  } else {
+    return(fitted)
+  } 
+}
+#-------------------------------
+all.R <- function(x, lambda){
+  R <- list()
+  for(i in 2:lambda){
+    R[[i]] <- lambda.select(x,i)
+  }
+  R <- as.data.frame(t(matrix(unlist(R), ncol = lambda-1)))
+  names(R) <- c("UBRE","CV","GCV","LAMBDA")
+  return(R)
+}
+```
+
+
++ De acuerdo con los resultados de la tabla y de la figura, el valor óptimo de $\lambda$, basado en el estimador UBRE, es $\lambda=2$.
+
+- En otras palabras, basados en este indicador, elegiremos a $\mu_{2}$ como el mejor estimador de $\mu$ en el problema de vino tinto usando el estimador de cosenos.
 
 ## 5. Estimación del modelo de regresión no paramétrica
 
+Tras haber elegido el valor optimo de $\lambda$ se prosigue a estimar el modelo de regresión no paramétrica.
+
+
+Se obtiene a continuación un dataframe que reune el valor del $\hat{R}(\lambda)$ para cada $\lambda$ y para cada método (UBRE,CV,GCV).
+
+```{r warning=FALSE, include=T, paged.print=TRUE}
+lambda <- 2
+all.R <- all.R(x, lambda)
+```
+
+### Representación gráfica
+
+```{r warning=FALSE, include=T, paged.print=TRUE}
+plot1 <- ggplot()+
+  geom_point(data = all.R, aes(x = LAMBDA, y = UBRE)) +
+  theme_bw() +
+  labs(x =  expression(lambda), y = expression(hat(R)(lambda)))
+
+plot2 <- ggplot()+
+  geom_point(data = all.R, aes(x = LAMBDA, y = CV)) +
+  theme_bw() +
+  labs(x =  expression(lambda), y = expression(hat(CV)(lambda)))
+
+plot3 <- ggplot()+
+  geom_point(data = all.R, aes(x = LAMBDA, y = GCV)) +
+  theme_bw() +
+  labs(x =  expression(lambda), y = expression(hat(GCV)(lambda)))
+
+grid.arrange(plot1, plot2, plot3, ncol=2)
+```
+
 ## 6. Interpretaciones
+
+A partir del modelo anterior se puede decir que:
 
 +
 
@@ -61,8 +217,22 @@ La elección del $\lambda$ más apropiado para la estimación de $\mu$ en el eje
 
 ## 7. Ajuste de modelo lineal y comparación
 
+```{r warning=FALSE, include=T, paged.print=TRUE}
+lambda <- 2
+salida <- 2 # 1: Riesgo, 2: fitted values
+
+fitted <- lambda.select(x, lambda, salida)
+x <- bind_cols(x, fitted)
+x
+ggplot() + geom_point(data = x, aes(x = V1, y = V2)) +
+  geom_line(data = x, aes(x =V1, y = fitted))
+```
+
+
 # Bibliografía
 
 + Olaya, J. (2012). Métodos de Regresión No Paramétrica. Universidad del Valle.
 
 - R Core Team. (2013). R: A Language and Environment for Statistical Computing. R Foundation for Statistical Computing. http://www.r-project.org/
+
++ Eubank (1999), Nonparametric Regression and Spline Smoothing, second edn, Marcel Dekker, New York, NY

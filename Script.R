@@ -51,6 +51,7 @@ corrplot(cor(muestra), method="square", type="upper", order="hclust", tl.col="bl
 # Exploracion de datos
 ggplot()+ geom_point(data = muestra, aes(y = fixed.acidity, x = pH)) + 
   ylab("Acidez fija") + xlab("pH")
+
 #----------------------------------------------------------------------------------------# 
 library(dplyr)
 x <- cbind(muestra$fixed.acidity,muestra$pH)
@@ -61,6 +62,10 @@ y  = pull(x, V2)
 
 sigma.rice <- 1/(2*(n-1))*sum((y - lag(y, k=1))^2, na.rm = T)
 sigma.rice
+
+
+#----------------------------------------------------------------------------------------# 
+# Eleccion de lambda
 
 base_cons <- function(x,j){
   sqrt(2)*cos((j-1)*pi*x)
@@ -122,11 +127,15 @@ all.R <- function(x, lambda){
   names(R) <- c("UBRE","CV","GCV","LAMBDA")
   return(R)
 }
-#-------------------------------
+
+#----------------------------------------------------------------------------------------#
+# Dataframe con valores de lambda por cada metodo
 lambda <- 60
 all.R <- all.R(x, lambda)
 all.R
 
+#----------------------------------------------------------------------------------------#
+# Representacion grafica del lambda escogido
 plot1 <- ggplot()+
   geom_point(data = all.R, aes(x = LAMBDA, y = UBRE)) +
   theme_bw() +
@@ -144,6 +153,8 @@ plot3 <- ggplot()+
 
 grid.arrange(plot1, plot2, plot3, ncol=2)
 
+#----------------------------------------------------------------------------------------#
+# Ajuste de modelo lineal
 lambda <- 2
 salida <- 2 # 1: Riesgo, 2: fitted values
 
