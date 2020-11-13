@@ -1,0 +1,68 @@
+---
+title: 'Informe: Elección de $\lambda$ óptimo'
+author: "Angie Rodríguez Duque & César Saavedra Vanegas"
+date: "Octubre 14 de 2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+# Introducción
+
+En los métodos de regresión no paramétrica los estimadores en general no son insesgados, por lo que la varianza del estimador no será suficiente para evaluar la incertidumbre inherente a estos métodos.
+
+De acuerdo a lo anterior, el presente documento tiene como objetivo responder a la pregunta: ¿Cuál valor de $\lambda$ sería una “buena elección”?, para ello se hará uso del estimador rice y del estimador UBRE.
+
+## 1. Base de datos 
+
+La base de datos empleada se denomina "Vino Rojo". Este conjunto de datos de vino tinto consta de 1599 observaciones y 12 variables, 11 de las cuales son sustancias químicas.
+
+
+```{r warning=F, include=F, paged.print=T}
+# Cargar los datos
+Datos <- read.table("Datos.txt",header=T,sep = ",")
+Datos
+```
+
+## 2. Muestra aleatoria
+
+Se procede a seleccionar una muestra de 60 vinos de la base de datos y se escoge las variables "acidez fija" como respuesta y "ph" como predictora
+
+```{r warning=F, include=F, paged.print=T}
+# Cargar los datos
+Datos <- read.table("Datos.txt",header=T,sep = ",")
+Datos
+```
+
+### Representación gráfica
+
+## 3. Estimación de la varianza $(\hat{\sigma}^{2})$
+
+En esta sección se estimará la varianza del modelo haciendo uso del estimador de Rice denotado como $\sigma^{2}_{R}$ y propuesto por John Rice en 1984. Su expresión es la siguiente:
+
+
+$$ \sigma^{2}_{R}=\displaystyle{\frac{1}{2(n-1)}\sum_{i=2}^{n}\left( y_{i}-y_{i-1}\right)^{2}}$$
+
+## 4. Elección de $\lambda$
+
+La elección del $\lambda$ más apropiado para la estimación de $\mu$ en el ejemplo de vino rojo se lleva a cabo mediante el estimador insesgado del riesgo, también conocido como **UBRE** (UnBiased Risk Estimator) el cual hace uso de series de cosenos.
+
+
+## 5. Estimación del modelo de regresión no paramétrica
+
+## 6. Interpretaciones
+
++
+
+-
+
++ Se evidencia que tanto la varianza como el sesgo tienden a 0 cuando n crece, esto es, cuando $n=60$ se obtiene una varianza de .
+
+
+## 7. Ajuste de modelo lineal y comparación
+
+# Bibliografía
+
++ Olaya, J. (2012). Métodos de Regresión No Paramétrica. Universidad del Valle.
+
+- R Core Team. (2013). R: A Language and Environment for Statistical Computing. R Foundation for Statistical Computing. http://www.r-project.org/
