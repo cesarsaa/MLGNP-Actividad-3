@@ -3,9 +3,9 @@ title: 'Tarea 3: Elección de $\lambda$ óptimo'
 author: "Angie Rodríguez Duque & César Saavedra Vanegas"
 date: "Octubre 14 de 2020"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 ---
 ```{r warning=FALSE, include=F, paged.print=TRUE}
 suppressMessages(library(dplyr))
@@ -169,7 +169,7 @@ all.R <- function(x, lambda){
 ```
 
 ```{r warning=FALSE, include=T, paged.print=TRUE}
-lambda <- 30
+lambda <- 28
 all.R <- all.R(x, lambda)
 all.R
 ```
@@ -181,7 +181,6 @@ Ahora, tenemos la estimación del comportamiento de la acidez fija de acuerdo al
 ```{r fig.height=4, fig.width=8, message=TRUE, warning=TRUE}
 ggplot()+
   geom_point(data = all.R, aes(x = LAMBDA, y = UBRE)) +
-  theme_bw() +
   labs(x =  expression(lambda), y = expression(hat(R)(lambda)))
 ```
 
@@ -226,6 +225,25 @@ A partir del modelo anterior se puede decir que:
 
 ## 7. Ajuste de modelo lineal y comparación
 
+A continuación se realiza el ajuste del modelo lineal general
+
+```{r warning=FALSE, include=F, paged.print=TRUE}
+modelo <- lm(fixed.acidity ~ pH, data = muestra)
+summary(modelo)
+pHp <- predict(modelo) #Valores Predichos
+b0 <- round(modelo$coefficients[1],2)
+b1 <- round(modelo$coefficients[2],2)
+b0
+```
+
+
+
+```{r fig.height=4, fig.width=8, message=FALSE, warning=FALSE}
+qplot(x = pH, y = fixed.acidity,data = muestra, 
+      main = "", ylab = "Acidez fija",
+      xlab = "pH", geom = c("point"),
+      method = "lm") + geom_line(aes(y=pHp), lwd = 1.2, color = 4)
+```
 
 # Bibliografía
 
