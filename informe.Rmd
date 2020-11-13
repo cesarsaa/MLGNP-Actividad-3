@@ -3,9 +3,9 @@ title: 'Tarea 3: Elección de $\lambda$ óptimo'
 author: "Angie Rodríguez Duque & César Saavedra Vanegas"
 date: "Octubre 14 de 2020"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 ```{r warning=FALSE, include=F, paged.print=TRUE}
 suppressMessages(library(dplyr))
@@ -69,6 +69,8 @@ muestra <- muestra %>% arrange(pH)
 
 ### Representación gráfica
 
+A continuación se procede a graficar el comportamiento de diagrama de dispersion
+
 ```{r message=TRUE, warning=TRUE, include=T, paged.print=T}
 x <- muestra  %>% dplyr::select(fixed.acidity, pH)
 ```
@@ -101,7 +103,7 @@ $$\hat{R}(\lambda)=\frac{1}{n}RSS(\lambda)+\frac{2}{n}\hat{\sigma}^{2}tr\left[S_
 
 Donde: $\lambda \in (1,2,...,60)$ es el número de funciones $f_{i}$
 
-Deseamos entonces construir un dataframe tomando como variable respuesta "acidez fija" y como variable predictora "pH" donde  y f es la base de cosenos (CONS) que elegimos previamente.
+Deseamos entonces construir un dataframe tomando como variable respuesta "acidez fija" y como variable predictora "pH" donde f es la base de cosenos (CONS) que elegimos previamente.
 
 ```{r warning=FALSE, include=F, paged.print=TRUE}
 base_cons <- function(x,j){
@@ -167,16 +169,13 @@ all.R <- function(x, lambda){
 ```
 
 
-+ De acuerdo con los resultados de la tabla y de la figura, el valor óptimo de $\lambda$, basado en el estimador UBRE, es $\lambda=2$.
++ De acuerdo con los resultados de la tabla y de la figura, el valor óptimo de $\lambda$, basado en el estimador UBRE, es $\lambda=3$.
 
-- En otras palabras, basados en este indicador, elegiremos a $\mu_{2}$ como el mejor estimador de $\mu$ en el problema de vino tinto usando el estimador de cosenos.
+- En otras palabras, basados en este indicador, elegiremos a $\mu_{3}$ como el mejor estimador de $\mu$ en el problema de vino tinto usando el estimador de cosenos.
 
 ## 5. Estimación del modelo de regresión no paramétrica
 
-Tras haber elegido el valor optimo de $\lambda$ se prosigue a estimar el modelo de regresión no paramétrica.
-
-
-Se obtiene a continuación un dataframe que reune el valor del $\hat{R}(\lambda)$ para cada $\lambda$ y para cada método (UBRE,CV,GCV).
+Tras haber elegido el valor optimo de $\lambda$ se prosigue a estimar el modelo de regresión no paramétrica. Los resultados obtenidos se presentan a continuación en la tabla que reune el valor del $\hat{R}(\lambda)$ para cada $\lambda$ de acuerdo al método UBRE.
 
 ```{r warning=FALSE, include=T, paged.print=TRUE}
 lambda <- 30
@@ -184,45 +183,30 @@ all.R <- all.R(x, lambda)
 all.R
 ```
 
-### Representación gráfica
+### Representación de $\mu_{3}(X)$
 
-```{r warning=FALSE, include=F, paged.print=TRUE}
-plot1 <- ggplot()+
+Ahora, tenemos la estimación del comportamiento de la acidez fija de acuerdo al pH de los vinos usando series de Fourier con base de cosenos y con un $\lambda=3$, el cual fue seleccionado por medio del método UBRE. A partir de lo anterior, se puede decir que $\hat{\mu}_3$ es una buena aproximación a $\mu$.
+
+```{r fig.height=4, fig.width=8, message=TRUE, warning=TRUE}
+ggplot()+
   geom_point(data = all.R, aes(x = LAMBDA, y = UBRE)) +
   theme_bw() +
   labs(x =  expression(lambda), y = expression(hat(R)(lambda)))
-
-plot2 <- ggplot()+
-  geom_point(data = all.R, aes(x = LAMBDA, y = CV)) +
-  theme_bw() +
-  labs(x =  expression(lambda), y = expression(hat(CV)(lambda)))
-
-plot3 <- ggplot()+
-  geom_point(data = all.R, aes(x = LAMBDA, y = GCV)) +
-  theme_bw() +
-  labs(x =  expression(lambda), y = expression(hat(GCV)(lambda)))
-
 ```
 
-
-```{r fig.height=4, fig.width=8, message=TRUE, warning=TRUE}
-grid.arrange(plot1, plot2, plot3, ncol=2)
-```
-
-Finalmente se observa mediante los graficos que el valor de $\lambda$ que minimiza las estimaciones para los criterios de UBRE, CV y GCV es un valor de $\lambda=3$.
+Finalmente se observa mediante los graficos que el valor de $\lambda$ que minimiza las estimaciones segun el criterio de UBRE es un valor de $\lambda=3$.
 
 ## 6. Interpretaciones
 
 A partir del modelo anterior se puede decir que:
 
-+
-
--
-
 + Se evidencia que tanto la varianza como el sesgo tienden a 0 cuando n crece, esto es, cuando $n=60$ se obtiene una varianza de .
 
-
 ## 7. Ajuste de modelo lineal y comparación
+
+### Representación de $\mu_{3}(X)$
+
+Se observa el ajuste con $\lambda=3$ con los datos reales (puntos) y los datos ajustados por el modelo (línea) de la variable "Acidez fija" vs "pH".
 
 ```{r warning=FALSE, include=F, paged.print=TRUE}
 lambda <- 3
@@ -239,7 +223,8 @@ ggplot()+ geom_point(data = x, aes(x = pH, y = fixed.acidity)) +
   labs(subtitle = expression(lambda==3)) + 
   ylab("Acidez fija") + xlab("pH")
 ```
-Tenemos entonces la estimación del comportamiento de la acidez fija para el pH usando series de Fourier con base de cosenos y con un $\lambda=3$, que seleccionamos por medio de los métodos UBRE, CV y GCV , podríamos decir que $\mu_{3}$ una buena aproximación a $\mu$.
+
+Tenemos entonces la estimación del comportamiento de la acidez fija para el pH usando series de Fourier con base de cosenos y con un $\lambda=3$, que seleccionamos por medio del método UBRE, podríamos decir que $\mu_{3}$ es una buena aproximación a $\mu$.
 
 # Bibliografía
 
