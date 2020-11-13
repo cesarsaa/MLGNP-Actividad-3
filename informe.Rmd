@@ -168,22 +168,13 @@ all.R <- function(x, lambda){
 }
 ```
 
-
-+ De acuerdo con los resultados de la tabla y de la figura, el valor óptimo de $\lambda$, basado en el estimador UBRE, es $\lambda=3$.
-
-- En otras palabras, basados en este indicador, elegiremos a $\mu_{3}$ como el mejor estimador de $\mu$ en el problema de vino tinto usando el estimador de cosenos.
-
-## 5. Estimación del modelo de regresión no paramétrica
-
-Tras haber elegido el valor optimo de $\lambda$ se prosigue a estimar el modelo de regresión no paramétrica. Los resultados obtenidos se presentan a continuación en la tabla que reune el valor del $\hat{R}(\lambda)$ para cada $\lambda$ de acuerdo al método UBRE.
-
 ```{r warning=FALSE, include=T, paged.print=TRUE}
 lambda <- 30
 all.R <- all.R(x, lambda)
 all.R
 ```
 
-### Representación de $\mu_{3}(X)$
+### Selección de $\lambda$
 
 Ahora, tenemos la estimación del comportamiento de la acidez fija de acuerdo al pH de los vinos usando series de Fourier con base de cosenos y con un $\lambda=3$, el cual fue seleccionado por medio del método UBRE. A partir de lo anterior, se puede decir que $\hat{\mu}_3$ es una buena aproximación a $\mu$.
 
@@ -196,13 +187,10 @@ ggplot()+
 
 Finalmente se observa mediante los graficos que el valor de $\lambda$ que minimiza las estimaciones segun el criterio de UBRE es un valor de $\lambda=3$.
 
-## 6. Interpretaciones
 
-A partir del modelo anterior se puede decir que:
+## 5. Estimación del modelo de regresión no paramétrica
 
-+ Se evidencia que tanto la varianza como el sesgo tienden a 0 cuando n crece, esto es, cuando $n=60$ se obtiene una varianza de .
-
-## 7. Ajuste de modelo lineal y comparación
+Tras haber elegido el valor optimo de $\lambda$ se prosigue a estimar el modelo de regresión no paramétrica. Los resultados obtenidos se presentan a continuación en la tabla que reune el valor del $\hat{R}(\lambda)$ para cada $\lambda$ de acuerdo al método UBRE.
 
 ### Representación de $\mu_{3}(X)$
 
@@ -225,6 +213,19 @@ ggplot()+ geom_point(data = x, aes(x = pH, y = fixed.acidity)) +
 ```
 
 Tenemos entonces la estimación del comportamiento de la acidez fija para el pH usando series de Fourier con base de cosenos y con un $\lambda=3$, que seleccionamos por medio del método UBRE, podríamos decir que $\mu_{3}$ es una buena aproximación a $\mu$.
+
+## 6. Interpretaciones
+
+A partir del modelo anterior se puede decir que:
+
++ Se evidencia que tanto la varianza como el sesgo tienden a 0 cuando n crece, esto es, cuando $n=60$ se obtiene una varianza de .
+
++ De acuerdo con los resultados de la tabla y de la figura, el valor óptimo de $\lambda$, basado en el estimador UBRE, es $\lambda=3$.
+
+- En otras palabras, basados en este indicador, elegiremos a $\mu_{3}$ como el mejor estimador de $\mu$ en el problema de vino tinto usando el estimador de cosenos.
+
+## 7. Ajuste de modelo lineal y comparación
+
 
 # Bibliografía
 
