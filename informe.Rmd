@@ -45,7 +45,7 @@ De acuerdo a lo anterior, el presente documento tiene como objetivo responder a 
 
 ## 1. Base de datos 
 
-La base de datos empleada se denomina "Vino Rojo". Este conjunto de datos de vino tinto consta de 1599 observaciones y 12 variables, 11 de las cuales son sustancias químicas.
+El conjunto de datos empleados en el presente documento proviene del repositorio de la base de datos de aprendizaje automático de UCI. Los datos originales consisten en variables del vino portugués "Vinho Verde" y cuenta con 1599 observaciones de vino rojo y 4898 observaciones de vino blanco. Para cada uno se evalúa la calidad del vino (Calificación entre 0 y 10) y 11 variables químicas (cuantitativas), que son las siguientes: Acidez fija, Acidez volátil, Ácido cítrico, Azúcar residual, Cloruros, Dióxido de azufre libre, Dióxido de azufre total, Densidad , PH, sulfatos y alcohol. Específicamente se hará uso de las observaciones procedentes del vino rojo.
 
 
 ```{r warning=F, include=F, paged.print=T}
@@ -56,7 +56,11 @@ Datos
 
 ## 2. Muestra aleatoria
 
-Se procede a seleccionar una muestra de 60 vinos de la base de datos y se escoge las variables "acidez fija" como respuesta y "ph" como predictora
+Se procede a seleccionar una muestra aleatoria de 60 vinos de la base de datos y se escoge las variables "Acidez fija" como respuesta y "pH" como predictora, cuyas descripciones son las siguientes:
+
++ **Acidez fija:** La mayoría de los ácidos involucrados con el vino o fijos o no volátiles (no se evaporan fácilmente)
+
+- **pH:** Describe qué tan ácido o básico es un vino en una escala de 0 (muy ácido) a 14 (muy básico); la mayoría de los vinos están entre 3-4 en la escala de pH.
 
 ```{r warning=F, include=T, paged.print=T}
 # Tamaño de la muestra
@@ -69,7 +73,7 @@ muestra <- muestra %>% arrange(pH)
 
 ### Representación gráfica
 
-A continuación se procede a graficar el comportamiento de diagrama de dispersion
+A continuación se procede a graficar el comportamiento de ambas variables a partir del diagrama de dispersión:
 
 ```{r message=TRUE, warning=TRUE, include=T, paged.print=T}
 x <- muestra  %>% dplyr::select(fixed.acidity, pH)
@@ -80,6 +84,10 @@ x <- muestra  %>% dplyr::select(fixed.acidity, pH)
 ggplot() + geom_point(data = x, aes(x = pH, y = fixed.acidity)) + 
   ylab("Acidez fija") + xlab("pH")
 ```
+
+Mediante la gráfica de dispersión se puede interpretar un tipo de relación lineal negativa entre ambas variables de estudio, esto es, mientras mayor es el pH menor es la acidez fija, y mientras menor sea el pH del vino mayor será su acidez. Es por esta razón que en la enología, es decir, en la ciencia, técnica y arte de la producción del vino, los vinos tintos no se caracterizan por tener una acidez tan fuerte en comparación con los vinos blancos, pues el gusto amargo de algunos de sus taninos, se acentúa demasiado. 
+
+De acuerdo a lo anterior, el pH influye significativamente en la sensación de astringencia de los vinos tintos. Se observa fácilmente que el incremento del pH reduce la sensación de astringencia de los vinos o de los zumos de frutas tánicas. Este fenómeno se explica, al menos parcialmente, por la interacción de la acidez con la precipitación o la desnaturalización de las proteínas encargadas de la lubricación de la cavidad bucal en presencia de polifenoles.
 
 ## 3. Estimación de la varianza $(\hat{\sigma}^{2})$
 
@@ -245,10 +253,22 @@ qplot(x = pH, y = fixed.acidity,data = muestra,
       method = "lm") + geom_line(aes(y=pHp), lwd = 1.2, color = 4)
 ```
 
+Después de graficar el modelo lineal, se procede a realizar la comparación entre el modelo de regresión no paramétrica y el modelo lineal:
+
++ Respecto a la fuerza de la relación, se evalúa qué tan cerca se ajustan los datos a cada uno de los modelos para estimar la fuerza de la relación entre la variable predictora pH (X) y la variable de respuesta Acidez fija (Y). Se evidencia una relación fuerte en ambos casos, sin embargo la relación es notoriamente más significativa en el modelo de regresión no paramétrica, donde los puntos correspondientes a los vinos se adhieren mucho más a la línea de regresión ajustada  por lo cual el método no paramétrico modelará con mayor precisión nuestros datos.
+
+
 # Bibliografía
+
++ Cortez, P., Cerdeira, A., Almeida, F., Matos, T., & Reis, J. (2009). Modeling wine preferences by data mining from physicochemical properties. Decision Support Systems, 47(4), 547-553.
+
+- Eubank (1999), Nonparametric Regression and Spline Smoothing, second edn, Marcel Dekker, New York, NY
 
 + Olaya, J. (2012). Métodos de Regresión No Paramétrica. Universidad del Valle.
 
 - R Core Team. (2013). R: A Language and Environment for Statistical Computing. R Foundation for Statistical Computing. http://www.r-project.org/
 
-+ Eubank (1999), Nonparametric Regression and Spline Smoothing, second edn, Marcel Dekker, New York, NY
+
+
+
+
