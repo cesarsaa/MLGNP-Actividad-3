@@ -200,7 +200,7 @@ Ahora, tenemos la estimación del comportamiento de la acidez fija de acuerdo al
 
 ```{r fig.height=4, fig.width=8, message=TRUE, warning=TRUE}
 ggplot()+
-  geom_point(data = all.R, aes(x = LAMBDA, y = UBRE)) +
+  geom_point(data = all.R, aes(x = LAMBDA, y = UBRE)) + 
   labs(x =  expression(lambda), y = expression(hat(R)(lambda)))
 ```
 
@@ -250,7 +250,14 @@ A continuación se realiza el ajuste del modelo lineal general
 ```{r warning=FALSE, include=F, paged.print=TRUE}
 modelo <- lm(fixed.acidity ~ pH, data = muestra)
 summary(modelo)
-pHp <- predict(modelo) #Valores Predichos
+# ECM
+coeficientes <- coef(object = modelo)
+test_matrix <- model.matrix(fixed.acidity~ pH, data = muestra)
+predictores <- test_matrix[, names(coeficientes)]
+predicciones <- predictores %*% coeficientes
+validation_error <- mean((muestra$fixed.acidity - predicciones)^2)
+#Valores Predichos
+pHp <- predict(modelo)
 b0 <- round(modelo$coefficients[1],2)
 b1 <- round(modelo$coefficients[2],2)
 b0
@@ -265,10 +272,44 @@ qplot(x = pH, y = fixed.acidity,data = muestra,
       method = "lm") + geom_line(aes(y=pHp), lwd = 1.2, color = 4)
 ```
 
+## 8. Comparación de modelos
+
+Finalmente buscamos realizar la comparación entre modelos para escoger el que seria el de mejor ajuste, esto mediante el error cuadrático medio (ECM) y esto da como resultado la figura que se presenta a continuación. 
+
+```{r warning=FALSE, include=F, paged.print=TRUE}
+Acidez.fija <- pull(x, var = fixed.acidity)
+MSE.Taylor <- (1/60) * sum((Acidez.fija - fitted)^2)
+MSE.Taylor
+validation_error <- mean((muestra$fixed.acidity - predicciones)^2)
+validation_error
+
+ajuste <- c("Modelo no paramétrico", "Modelo lineal")
+MSE <- c(MSE.Taylor, validation_error)
+comparacion <- data.frame(Ajuste = ajuste, MSE = MSE)
+```
+
+```{r warning=FALSE, include=F, paged.print=TRUE}
+ECM <- ggplot(data = comparacion, aes(x = reorder(x = Ajuste, X = MSE), 
+                                        y = MSE, color = Ajuste, 
+                                        label = round(MSE,2))) + 
+  geom_point(size = 10) + 
+  geom_text(color = "white", size = 2) + 
+  labs(x = "", y = "ECM") + 
+  coord_flip() + theme(legend.position = "none") +
+  labs(title = "") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r fig.height=3, fig.width=6, message=FALSE, warning=FALSE}
+ECM
+```
+
 Después de graficar el modelo lineal, se procede a realizar la comparación entre el modelo de regresión no paramétrica y el modelo lineal:
 
 + Respecto a la fuerza de la relación, se evalúa qué tan cerca se ajustan los datos a cada uno de los modelos para estimar la fuerza de la relación entre la variable predictora pH (X) y la variable de respuesta Acidez fija (Y). Se evidencia una relación fuerte en ambos casos, sin embargo la relación es notoriamente más significativa en el modelo de regresión no paramétrica, donde los puntos correspondientes a los vinos se adhieren mucho más a la línea de regresión ajustada  por lo cual el método no paramétrico modelará con mayor precisión nuestros datos.
 
+Esto se verifica mediante el calculo del error cuadrático medio, como se observa en la figura anterior, donde el modelo no paramétrico obtiene un $MSE=1.49$ y en contraste al $MSE=1.54$ obtenido para el modelo lineal, lo cual permite concluir que este seria el modelo que se ajusta mejor a nuestros datos. 
 
 # Bibliografía
 

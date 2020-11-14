@@ -103,6 +103,10 @@ all.R <- function(x, lambda){
 lambda <- 30
 all.R <- all.R(x, lambda)
 all.R
+UBRE <- cbind(all.R$UBRE,all.R$LAMBDA)
+UBRE <- data.frame(UBRE)
+names(UBRE)[1] = "UBRE";names(UBRE)[2] = "LAMBDA"
+UBRE
 #----------------------------------------------------------------------------------------#
 plot1 <- ggplot()+
   geom_point(data = all.R, aes(x = LAMBDA, y = UBRE)) +
