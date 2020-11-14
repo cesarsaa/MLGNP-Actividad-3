@@ -176,11 +176,23 @@ all.R <- function(x, lambda){
 }
 ```
 
-```{r warning=FALSE, include=T, paged.print=TRUE}
-lambda <- 28
+```{r warning=FALSE, include=F, paged.print=TRUE}
+lambda <- 10
 all.R <- all.R(x, lambda)
 all.R
+UBRE <- cbind(all.R$UBRE,all.R$LAMBDA)
+UBRE <- data.frame(UBRE)
+names(UBRE)[1] = "UBRE";names(UBRE)[2] = "LAMBDA"
+UBRE
 ```
+
+Se imprimen los 10 primeros valores UBRE, los cuales generan el $\lambda$ optimo que minimiza el riesgo y que resulta se el mas adecuado para la estimación de $\mu$.
+
+```{r warning=FALSE, include=T, paged.print=TRUE}
+# Estimador UBRE
+UBRE
+```
+
 
 ### Selección de $\lambda$
 
